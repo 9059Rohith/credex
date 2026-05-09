@@ -201,3 +201,6 @@ MIT
 ---
 
 **Deployed URL:** [Coming soon after Vercel deployment]
+ 
+## Security 
+See SECURITY.md for security policies. 
