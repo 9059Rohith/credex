@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-const groq = new Groq({
+const groq = process.env.GROQ_API_KEY ? new Groq({
   apiKey: process.env.GROQ_API_KEY,
-});
+}) : null;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    
+    // If no Groq API key, return fallback immediately
+    if (!groq) {
+      const { teamSize, useCase, totalMonthlySavings, totalAnnualSavings } = body;
+      const fallback = `Your ${teamSize}-person ${useCase} team could save $${totalMonthlySavings}/month ($${totalAnnualSavings}/year) on AI tools. Review the recommendations below to optimize your spending.`;
+      return NextResponse.json({ summary: fallback, fallback: true });
+    }
     const { teamSize, useCase, totalMonthlySavings, totalAnnualSavings, tools, recommendations } = body;
 
     // Build context for AI
