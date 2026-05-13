@@ -27,6 +27,8 @@ export default function Home() {
   });
   const [auditResult, setAuditResult] = useState<any>(null);
   const [showResults, setShowResults] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [loadingAI, setLoadingAI] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -88,16 +90,41 @@ export default function Home() {
     setToolsData({ ...toolsData, [toolKey]: updated });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const tools = selectedTools.map((key) => toolsData[key]).filter(Boolean);
     const input: AuditInput = { tools, teamSize, primaryUseCase };
     const result = runAudit(input);
     setAuditResult(result);
     setShowResults(true);
+    setLoadingAI(true);
+    
     // Scroll to results
     setTimeout(() => {
       document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+
+    // Call Groq API for AI summary
+    try {
+      const response = await fetch('/api/groq-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamSize,
+          useCase: primaryUseCase,
+          totalMonthlySavings: result.totalMonthlySavings,
+          totalAnnualSavings: result.totalAnnualSavings,
+          tools: tools.map(t => ({ tool: t.tool, plan: t.plan })),
+          recommendations: result.recommendations,
+        }),
+      });
+      const data = await response.json();
+      setAiSummary(data.summary);
+    } catch (error) {
+      console.error('Failed to get AI summary:', error);
+      setAiSummary(`Your ${teamSize}-person ${primaryUseCase} team analyzed. Review recommendations below.`);
+    } finally {
+      setLoadingAI(false);
+    }
   };
 
   const resetAudit = () => {
@@ -275,6 +302,28 @@ export default function Home() {
         {/* Results Section */}
         {showResults && auditResult && (
           <div id="results" className="space-y-6">
+            {/* AI Summary Card */}
+            {(aiSummary || loadingAI) && (
+              <Card className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border-blue-500/30 mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-2xl">🤖</span>
+                    AI-Powered Executive Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingAI ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      Generating personalized insights...
+                    </div>
+                  ) : (
+                    <p className="text-lg leading-relaxed">{aiSummary}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Hero Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20">
