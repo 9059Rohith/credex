@@ -1,8 +1,15 @@
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+let groq: Groq | null = null;
+
+function getGroqClient() {
+  if (!groq && process.env.GROQ_API_KEY) {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+  }
+  return groq;
+}
 
 export interface AISummaryInput {
   useCase: string;
@@ -20,7 +27,12 @@ export async function generateAISummary(input: AISummaryInput): Promise<string> 
   const userPrompt = `Write a ~100-word audit summary for a ${input.useCase} team of ${input.teamSize} people spending $${input.totalMonthly}/month on AI tools. Stack: ${input.toolList.join(', ')}. We found $${input.totalSavings}/month in savings by: ${input.topRecommendations.join('; ')}. Tone: direct, helpful, slightly urgent. End with one clear next step.`;
 
   try {
-    const completionPromise = groq.chat.completions.create({
+    const client = getGroqClient();
+    if (!client) {
+      return getFallbackSummary(input);
+    }
+    
+    const completionPromise = client.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
