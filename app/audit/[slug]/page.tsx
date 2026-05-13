@@ -4,12 +4,23 @@ import { createClient } from "@supabase/supabase-js";
 import AuditResults from "@/components/AuditResults";
 import { formatCurrency } from "@/lib/utils";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+function getSupabaseClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 async function getAudit(slug: string) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  
   const { data, error } = await supabase
     .from("audits")
     .select("*")
