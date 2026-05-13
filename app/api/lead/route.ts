@@ -1,102 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { supabaseAdmin } from "@/lib/supabase";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-function getSupabaseClient() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return null;
-  }
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-}
-
-function getResendClient() {
-  if (!process.env.RESEND_API_KEY) {
-    return null;
-  }
-  return new Resend(process.env.RESEND_API_KEY);
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, companyName, role, teamSize, auditSlug, totalMonthlySavings } = body;
+    const body = await req.json();
+    const { email, companyName, role, auditId, monthlySavings } = body;
 
-    // Basic validation
-    if (!email || !auditSlug) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!email) {
+      return NextResponse.json(
+        { error: "Email is required" },
+        { status: 400 }
+      );
     }
 
-    // Store lead in Supabase (if configured)
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const { error: leadError } = await supabase.from("leads").insert({
-      email,
-      company_name: companyName || null,
-      role: role || null,
-      team_size: teamSize,
-      audit_slug: auditSlug,
-      total_monthly_savings: totalMonthlySavings,
-      created_at: new Date().toISOString(),
-    });
+    // Save to Supabase (if configured)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      try {
+        const { error } = await supabaseAdmin
+          .from("leads")
+          .insert({
+            email,
+            company_name: companyName || null,
+            role: role || null,
+            audit_id: auditId,
+            monthly_savings: monthlySavings,
+          });
 
-      if (leadError) {
-        console.error("Supabase lead insert error:", leadError);
+        if (error) {
+          console.error("Supabase lead save error:", error);
+        }
+      } catch (supabaseError) {
+        console.error("Failed to save lead to Supabase:", supabaseError);
       }
     }
 
     // Send email via Resend (if configured)
-    const resend = getResendClient();
     if (resend) {
       try {
+        const isHighValue = monthlySavings > 500;
+        
         await resend.emails.send({
-        from: "SpendLens <audit@spendlens.ai>",
-        to: email,
-        subject: `Your AI Spend Audit - Save $${Math.round(totalMonthlySavings)}/month`,
-        html: `
-          <h1>Your AI Spend Audit Results</h1>
-          <p>Thanks for using SpendLens! Here's a summary of your audit:</p>
-          
-          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="margin: 0 0 10px 0;">💰 Potential Savings</h2>
-            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #2563eb;">
-              $${Math.round(totalMonthlySavings)}/month
-            </p>
-            <p style="margin: 0;">That's $${Math.round(totalMonthlySavings * 12)}/year!</p>
-          </div>
-
-          <p>View your full audit here:<br>
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL}/audit/${auditSlug}" style="color: #2563eb;">
-            ${process.env.NEXT_PUBLIC_BASE_URL}/audit/${auditSlug}
-          </a></p>
-
-          ${totalMonthlySavings >= 500 ? `
-            <div style="border: 2px solid #2563eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin: 0 0 10px 0;">🎯 High-Value Opportunity</h3>
-              <p>With savings this large, you're an ideal candidate for Credex's discounted AI infrastructure credits.</p>
-              <p>We'll reach out within 24 hours to discuss how we can help you capture even more savings.</p>
+          from: "SpendLens <noreply@spendlens.app>",
+          to: [email],
+          subject: `Your AI Spend Audit Results - $${monthlySavings.toFixed(0)}/mo in Savings`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h1 style="color: #10b981;">Your AI Tool Audit Report</h1>
+              <p>Hi${companyName ? ` from ${companyName}` : ""}!</p>
+              <p>Thanks for using SpendLens. Here's what we found:</p>
+              
+              <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h2 style="margin: 0; color: #10b981;">$${monthlySavings.toFixed(0)}/month</h2>
+                <p style="margin: 5px 0 0 0; color: #6b7280;">Potential savings identified</p>
+              </div>
+              
+              <p>Your full audit is available at: <a href="https://spendlens.app/audit/${auditId}">View Report</a></p>
+              
+              ${isHighValue ? `
+                <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                  <h3 style="margin: 0 0 10px 0; color: #065f46;">High-Value Opportunity Detected</h3>
+                  <p style="margin: 0;">With $${monthlySavings.toFixed(0)}/month in potential savings, Credex can help you save even more through discounted AI infrastructure credits.</p>
+                  <p style="margin: 10px 0 0 0;"><strong>Our team will reach out within 48 hours.</strong></p>
+                </div>
+              ` : ""}
+              
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+              
+              <p style="color: #6b7280; font-size: 14px;">
+                Built by <a href="https://credex.rocks">Credex</a> · 
+                We help startups save on AI infrastructure.
+              </p>
             </div>
-          ` : ''}
-
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Built by Credex · <a href="https://credex.rocks">credex.rocks</a>
-          </p>
-        `,
-      });
+          `,
+        });
       } catch (emailError) {
-        console.error("Resend email error:", emailError);
-        // Don't fail the request if email fails
+        console.error("Failed to send email:", emailError);
+        // Continue anyway - lead is saved
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Lead API error:", error);
+    console.error("Lead capture error:", error);
     return NextResponse.json(
       { error: "Failed to capture lead" },
       { status: 500 }

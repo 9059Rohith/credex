@@ -1,79 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { runAudit, type AuditInput } from "@/lib/auditEngine";
-import { createClient } from "@supabase/supabase-js";
-import { generateAISummary } from "@/lib/groq";
+import { supabaseAdmin } from "@/lib/supabase";
+import { runAudit } from "@/lib/auditEngine";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-function getSupabaseClient() {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return null;
-  }
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await req.json();
     const { tools, teamSize, primaryUseCase } = body;
 
-    // Run the audit
-    const auditInput: AuditInput = {
-      tools,
-      teamSize,
-      primaryUseCase,
-    };
-    const auditResult = runAudit(auditInput);
+    // Run audit engine
+    const auditResult = runAudit({ tools, teamSize, primaryUseCase });
 
-    // Generate AI summary
-    const toolList = tools.map((t: any) => t.tool);
-    const topRecommendations = auditResult.recommendations
-      .filter((a: any) => a.monthlySavings > 0)
-      .slice(0, 3)
-      .map((a: any) => a.reason);
-    
-    const aiSummary = await generateAISummary({
-      useCase: primaryUseCase,
-      teamSize,
-      totalMonthly: tools.reduce((sum: number, t: any) => sum + (t.monthlySpend || 0), 0),
-      totalSavings: auditResult.totalMonthlySavings,
-      totalAnnual: auditResult.totalAnnualSavings,
-      toolList,
-      topRecommendations,
-    });
-
-    // Generate unique slug
-    const slug = nanoid(10);
+    // Generate unique ID
+    const auditId = nanoid(10);
 
     // Save to Supabase (if configured)
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const { error } = await supabase.from("audits").insert({
-      slug,
-      tools_json: JSON.stringify(tools),
-      results_json: JSON.stringify(auditResult),
-      ai_summary: aiSummary,
-      team_size: teamSize,
-      primary_use_case: primaryUseCase,
-      total_monthly_savings: auditResult.totalMonthlySavings,
-      created_at: new Date().toISOString(),
-    });
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      try {
+        const { error } = await supabaseAdmin
+          .from("audits")
+          .insert({
+            id: auditId,
+            tools_input: tools,
+            audit_result: auditResult,
+            total_monthly_savings: auditResult.totalMonthlySavings,
+            total_annual_savings: auditResult.totalAnnualSavings,
+            use_case: primaryUseCase,
+            team_size: teamSize,
+          });
 
-      if (error) {
-        console.error("Supabase insert error:", error);
+        if (error) {
+          console.error("Supabase error:", error);
+        }
+      } catch (supabaseError) {
+        console.error("Failed to save to Supabase:", supabaseError);
+        // Continue anyway - audit still works without DB
       }
     }
 
-    return NextResponse.json({ slug, audit: auditResult, aiSummary });
+    return NextResponse.json({
+      auditId,
+      auditResult,
+    });
   } catch (error) {
-    console.error("Audit API error:", error);
+    console.error("Audit error:", error);
     return NextResponse.json(
-      { error: "Failed to generate audit" },
+      { error: "Failed to process audit" },
       { status: 500 }
     );
   }

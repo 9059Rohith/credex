@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TOOL_PRICING } from "@/lib/pricingData";
 import { runAudit, type AuditInput } from "@/lib/auditEngine";
+import { LeadCaptureModal } from "@/components/LeadCaptureModal";
 
 interface ToolFormData {
   tool: string;
@@ -26,9 +27,11 @@ export default function Home() {
     cursor: { tool: "cursor", plan: "Pro", seats: 5, monthlySpend: 100 },
   });
   const [auditResult, setAuditResult] = useState<any>(null);
+  const [auditId, setAuditId] = useState<string>("");
   const [showResults, setShowResults] = useState(false);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [loadingAI, setLoadingAI] = useState(false);
+  const [showLeadModal, setShowLeadModal] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -92,9 +95,7 @@ export default function Home() {
 
   const handleSubmit = async () => {
     const tools = selectedTools.map((key) => toolsData[key]).filter(Boolean);
-    const input: AuditInput = { tools, teamSize, primaryUseCase };
-    const result = runAudit(input);
-    setAuditResult(result);
+    
     setShowResults(true);
     setLoadingAI(true);
     
@@ -103,24 +104,43 @@ export default function Home() {
       document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
 
-    // Call Groq API for AI summary
+    // Call API to save audit and get ID
     try {
-      const response = await fetch('/api/groq-summary', {
+      const auditResponse = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tools,
+          teamSize,
+          primaryUseCase,
+        }),
+      });
+      
+      const auditData = await auditResponse.json();
+      setAuditId(auditData.auditId);
+      setAuditResult(auditData.auditResult);
+
+      // Call Groq API for AI summary
+      const summaryResponse = await fetch('/api/groq-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teamSize,
           useCase: primaryUseCase,
-          totalMonthlySavings: result.totalMonthlySavings,
-          totalAnnualSavings: result.totalAnnualSavings,
+          totalMonthlySavings: auditData.auditResult.totalMonthlySavings,
+          totalAnnualSavings: auditData.auditResult.totalAnnualSavings,
           tools: tools.map(t => ({ tool: t.tool, plan: t.plan })),
-          recommendations: result.recommendations,
+          recommendations: auditData.auditResult.recommendations,
         }),
       });
-      const data = await response.json();
-      setAiSummary(data.summary);
+      const summaryData = await summaryResponse.json();
+      setAiSummary(summaryData.summary);
     } catch (error) {
-      console.error('Failed to get AI summary:', error);
+      console.error('Failed to process audit:', error);
+      // Fallback to client-side audit
+      const input: AuditInput = { tools, teamSize, primaryUseCase };
+      const result = runAudit(input);
+      setAuditResult(result);
       setAiSummary(`Your ${teamSize}-person ${primaryUseCase} team analyzed. Review recommendations below.`);
     } finally {
       setLoadingAI(false);
@@ -454,11 +474,37 @@ export default function Home() {
               <Button onClick={resetAudit} variant="outline" size="lg">
                 ← Modify My Stack
               </Button>
-              <Button variant="outline" size="lg">
-                Share Results
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => setShowLeadModal(true)}
+              >
+                📧 Get Full Report
               </Button>
+              {auditId && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => {
+                    const url = `${window.location.origin}/audit/${auditId}`;
+                    navigator.clipboard.writeText(url);
+                    alert('Share link copied to clipboard!');
+                  }}
+                >
+                  🔗 Share Results
+                </Button>
+              )}
             </div>
           </div>
+        )}
+
+        {/* Lead Capture Modal */}
+        {showLeadModal && auditId && auditResult && (
+          <LeadCaptureModal
+            auditId={auditId}
+            monthlySavings={auditResult.totalMonthlySavings}
+            onClose={() => setShowLeadModal(false)}
+          />
         )}
 
         {/* Footer */}
