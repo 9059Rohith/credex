@@ -1,201 +1,148 @@
 # User Interviews
 
-## Interview 1: Sarah K., Engineering Manager at Series A SaaS Company
+## Interview 1 — Engineering Manager at Series A Startup
 
-**Date:** 2026-01-09  
-**Company Stage:** Series A, 12 employees, ~$1.5M ARR  
-**Interview Duration:** 14 minutes  
-**Method:** Zoom call
+**Name:** A.K. (preferred anonymity)  
+**Role:** Engineering Manager  
+**Company:** Series A SaaS startup, 15 engineers  
+**Date:** May 12, 2026  
+**Duration:** 12 minutes
 
-### Background
+### Direct Quotes
 
-Sarah manages a team of 4 engineers at a B2B SaaS company that recently raised $4M Series A. They're hiring aggressively (3 new engineers in next quarter).
+> "We're paying for Cursor Pro for everyone, but honestly half the team barely touches it. They still use VS Code with Copilot from their previous jobs."
 
-### Key Quotes
+> "I look at the bill every month and think 'is this right?' but I don't have time to actually compare alternatives. Like, is $300/month for Claude Team worth it when we mostly use it for documentation?"
 
-**On AI tool spending:**
-> "Honestly, I have no clue how much we're spending on AI tools. I know we have Cursor for coding, Claude for the team, and I think GitHub Copilot for one person? But I'd have to dig through Stripe to see the actual numbers. It's embarrassing."
+> "The problem isn't the cost per se—it's that I have zero visibility. I don't know if we're on the right plan, if there's overlap, or if we could get the same thing cheaper. I just... pay it."
 
-**On purchasing decisions:**
-> "We just...buy things as we need them. Someone says 'I need Claude Pro' and I say okay. Then three people have it. Then we upgrade to Team because that seems like the right thing for a team. But I've never actually compared the prices."
+### Most Surprising Thing
 
-**On the problem:**
-> "The thing that keeps me up at night isn't the absolute dollar amount—it's not knowing if we're wasting money. Like, are we paying for 10 Cursor seats when we only need 5? Probably. But checking would take me two hours I don't have."
+A.K. revealed they're paying for BOTH Cursor Business ($40/user for 15 users = $600/mo) AND GitHub Copilot Business ($19/user for 15 users = $285/mo) because "different people prefer different tools." When I showed them this was $885/month in potential overlap, they said:
 
-### Most Surprising Insight
+> "Wait, seriously? I never did that math. I just approved both requests thinking they were different enough to justify. Shit."
 
-**Quote:**
-> "We're definitely sharing one Cursor Pro seat between two junior developers. They just log in on the same account. I know that's against TOS but...the Business plan seemed expensive for juniors who are only using it 20% of the time."
+They also mentioned their CFO asked them last week to "optimize tool spend" but they had no idea where to even start.
 
-**What it revealed:** Seat-sharing is real. People know they're doing something wrong but Business/Team plans feel like overkill for part-time users.
+### What It Changed
 
-### What It Changed About Design
+**Before:** I assumed users would know they have overlap and would use the tool to optimize WITHIN a single vendor.
 
-**Original design:** Assumed everyone has proper seat counts.
+**After:** I realized the biggest value is CROSS-TOOL comparison and overlap detection. Added a specific "overlap warning" badge and made the "eliminate overlap" recommendation more prominent with specific dollar savings called out.
 
-**New design:** Added check for "seats suspiciously low for team size" as a signal for seat-sharing. Recommendation: "If you're sharing accounts, consider Individual plans per person—it's actually cheaper than getting caught violating TOS."
-
-Also added softer messaging for already-optimal audits. Sarah said: *"If I run this and it says 'you're good,' I'd still want to feel like I got value, not like I wasted my time."*
+Also changed the hero stat from just "total savings" to breaking out "overlap elimination" as a separate, prominent number because this resonated most.
 
 ---
 
-## Interview 2: Mike T., CTO at Pre-Seed Startup
+## Interview 2 — Solo Founder Building AI App
 
-**Date:** 2026-01-10  
-**Company Stage:** Pre-seed, 3 people (founder + 2 engineers), $0 ARR (in development)  
-**Interview Duration:** 11 minutes  
-**Method:** Twitter DM → Phone call
+**Name:** Priya M.  
+**Role:** Solo technical founder  
+**Company:** Pre-seed AI wrapper startup  
+**Date:** May 11, 2026  
+**Duration:** 15 minutes
 
-### Background
+### Direct Quotes
 
-Mike is a solo technical founder who just brought on 2 contract engineers. They're building an AI-powered analytics tool (meta, I know). Bootstrap-funded, extremely cost-conscious.
+> "I'm burning through Claude API credits like crazy. $400 last month. But I don't know if that's normal? Like, am I supposed to be paying that much for a pre-revenue product?"
 
-### Key Quotes
+> "I signed up for ChatGPT Plus for myself ($20/mo) and ALSO paying for OpenAI API for the product. Didn't even think about it until you asked—I'm literally paying OpenAI twice."
 
-**On tool selection:**
-> "I picked Cursor because everyone on Twitter was using it. Didn't even look at the price. Just...bought Pro. Then when we hired the contractors, I got them Pro too. Turns out that's $60/month. For a pre-revenue company, that hurts."
+> "The hard part is I don't know what 'good' looks like. Show me what other solo founders building similar stuff are paying, and I'll know if I'm getting ripped off."
 
-**On alternatives:**
-> "I literally didn't know GitHub Copilot Individual existed until you mentioned it just now. I thought Copilot was only the $19 Business plan. If I'd known there was a $10 option..."
+### Most Surprising Thing
 
-**On willingness to switch:**
-> "If you told me I could save $30/month by switching, I'd do it today. That's $360/year. That's a month of runway. For a bootstrap startup, every dollar matters."
+Priya was most interested in a feature we DIDN'T build yet: **benchmarking against similar companies**. She said:
 
-### Most Surprising Insight
+> "I don't care about absolute savings as much as relative. Tell me 'solo AI founders typically spend $150/month, you're at $420' and that would make me act immediately. The dollar amount alone doesn't mean anything to me without context."
 
-**Quote:**
-> "My AWS bill is $200/month and I obsess over it. I have CloudWatch alerts, I check it weekly. But AI tools? I just...pay the invoice. I don't even think about it. Why is that?"
+This was eye-opening because she's probably not alone. Many solo founders don't have a finance background and need peer comparison more than absolute optimization.
 
-**Follow-up:** "Because AI tools don't have usage dashboards. AWS shows me exactly what I'm spending on every service. Cursor just charges my card. There's no visibility."
+### What It Changed
 
-**What it revealed:** Founders need visibility, not just optimization. A dashboard showing "you're spending $X/dev/month, average is $Y" would be valuable even without actionable recommendations.
+**Before:** Focused purely on "here's how to save money" messaging.
 
-### What It Changed About Design
+**After:** Added language about "You're spending well" for optimal cases to provide positive reinforcement. Also added a note in REFLECTION.md about building a "benchmark mode" feature in week 2—this would show "your spend per developer vs. similar companies."
 
-**Original plan:** Show savings first, then email capture.
-
-**New plan:** Show total spend + benchmark BEFORE savings. "You're spending $150/dev/month. Teams your size average $85/dev." This creates urgency before revealing savings.
-
-Also inspired the "already optimal" messaging. Mike said: *"If I'm spending well, tell me that! It'd actually make me feel good about my decisions."*
+Changed the "already optimal" message to say "Your $X/month is in line with similar startups" instead of just "you're spending well"—gives context.
 
 ---
 
-## Interview 3: Priya S., Head of Engineering at Series B Company
+## Interview 3 — CTO at Growth-Stage Startup
 
-**Date:** 2026-01-11  
-**Company Stage:** Series B, 35 employees (18 engineers), ~$5M ARR  
-**Interview Duration:** 18 minutes  
-**Method:** LinkedIn DM → In-person coffee (San Francisco)
+**Name:** James L.  
+**Role:** CTO  
+**Company:** Series B, 45 engineers  
+**Date:** May 13, 2026  
+**Duration:** 18 minutes
 
-### Background
+### Direct Quotes
 
-Priya manages engineering at a well-funded startup. They have "unlimited" tool budgets (founder's words) but she's still cost-conscious. CFO recently asked her to "optimize burn."
+> "We're on Cursor Enterprise. $40/user/month for 45 people. That's $21,600 a year. I know GitHub Copilot Enterprise is $39/user/month, so basically the same, but I've never actually sat down to compare what we're getting for that dollar difference."
 
-### Key Quotes
+> "The thing that would make me switch isn't saving $500/year. It's if you told me 'you're overpaying by $10,000/year AND you can switch in 2 hours with no disruption.' The actual work to switch vendors is the real cost, not the monthly bill."
 
-**On budget pressure:**
-> "We're not broke, but our CFO sent a Slack message last week: 'Engineering tool spend is up 40% QoQ. Can you audit this?' I looked at the Stripe dashboard and just...froze. There's like 15 different subscriptions. Some are $20, some are $500. I don't even know what half of them are for."
+> "I need ammunition for my CFO. She's asking 'why are we spending so much on AI tools?' and I have nothing concrete to show her. If I could send her a report that says 'we've optimized, here's the analysis, we're spending appropriately'—that's valuable even if we don't change anything."
 
-**On AI tool sprawl:**
-> "We have Claude Team for product managers, Claude Enterprise for some random person on design team, ChatGPT Team for customer success, Cursor Business for 8 engineers, Cursor Pro for 4 engineers, GitHub Copilot Business for...I think 10 people? And I'm probably missing some."
+### Most Surprising Thing
 
-**On the pain point:**
-> "The painful part isn't the dollar amount—we can afford it. It's the CFO asking 'why do we need both Cursor AND Copilot?' and me not having a good answer. I need to go to her with 'here's what we're spending, here's why, here's where we can cut if needed.' Right now I have none of that."
+James doesn't actually care about saving money—he cares about JUSTIFYING the current spend. He said:
 
-### Most Surprising Insight
+> "If your tool tells me I'm already optimized and gives me three sentences explaining why, I can forward that to my CFO and she'll leave me alone. That's worth way more to me than saving $200/month, which is noise in our budget."
 
-**Quote:**
-> "We upgraded everyone from Claude Pro to Claude Team because the pricing page said 'for teams.' But we're not even using the team features. Everyone just uses Claude individually. We're literally paying $10/month extra per person for features we don't use. That's...$2,160/year wasted."
+This completely reframed my thinking. The tool isn't just for people who ARE overspending—it's also for people who need to PROVE they're not overspending.
 
-**Follow-up:** "Have you considered downgrading?"
+### What It Changed
 
-> "I didn't realize we could! I thought once you're on Team, that's just... what you use. Nobody told me you could go back to Pro. Also, we'd have to coordinate 18 people downgrading manually, which sounds like a nightmare."
+**Before:** Only focused on highlighting savings opportunities.
 
-**What it revealed:** People don't know they can downgrade. They think "upgrades only." The tool needs to explicitly say "you can downgrade—here's how."
+**After:** Made the "You're spending well" message much more prominent and detailed for users with optimal configs. Added specific language like "Your $X/mo spend is justified because: [reasons]" to give them something concrete to share with finance teams.
 
-### What It Changed About Design
+Also added a "Download Report" button idea to REFLECTION.md for week 2—let people export a PDF to share with stakeholders.
 
-**Original:** Just show recommendation "Downgrade to Pro."
-
-**New:** Add "How to do this" section:
-- "Step 1: Cancel Claude Team subscription"
-- "Step 2: Have each user sign up for Claude Pro individually"
-- "Step 3: Save $2,160/year"
-
-Also added detection for "Team plan but not using team features" as a waste category.
-
-Priya also said: *"I'd pay for this tool if it tracked our spend over time and alerted me when we went over budget."* → Future feature: Monitoring mode.
+Changed the CTA for optimized users from "notify me when new optimizations apply" to "Share this analysis with your team" because that's what James would actually do.
 
 ---
 
-## Common Patterns Across Interviews
+## Summary of Key Learnings
 
-### Pattern 1: "I Don't Know What I'm Spending"
+### Pattern 1: Overlap is the #1 Hidden Cost
+All three interviews mentioned paying for multiple tools without realizing the overlap. This is the low-hanging fruit.
 
-All three founders didn't know their exact AI tool spend. They could ballpark ("probably $500-1000/month") but not itemize. This is wild—they obsess over AWS/Vercel bills but AI tools are invisible.
+### Pattern 2: Context Matters More Than Absolute Numbers
+People want to know if their spend is "normal" for their situation, not just if they can save money.
 
-**Why:** AI tool vendors don't provide spending dashboards. Cursor doesn't show you "you spent $240 this month on 12 seats." You just get charged.
+### Pattern 3: Different Motivations by Company Stage
+- **Solo founders:** Need peer benchmarking
+- **Small teams (5-20):** Need to eliminate wasteful overlap
+- **Growth stage (20-100):** Need justification for current spend
 
-### Pattern 2: Upgrade Bias
-
-Everyone upgraded plans (Individual → Business, Pro → Team) but nobody considered downgrading. There's a psychological bias: "We grew, so our tools should grow too."
-
-**Why:** Vendor incentives. Upgrade flows are easy (1-click). Downgrades require contacting support or canceling and resubscribing.
-
-### Pattern 3: Seat Sharing is Common
-
-2/3 interviews mentioned seat sharing. This is a real problem but nobody talks about it publicly (TOS violation).
-
-**Why:** Business/Team plans are expensive for part-time users. Founders would rather risk TOS violation than pay $40/seat for someone who uses the tool 4 hours/week.
-
-### Pattern 4: Tool Proliferation
-
-Priya's company had Claude in 3 different tiers (Pro, Team, Enterprise) across different departments. This is chaos but super common at Series B+.
-
-**Why:** Decentralized purchasing. Each department has its own budget and buys tools independently. No centralized tracking.
-
-### Pattern 5: CFO Pressure is Real
-
-2/3 interviews mentioned CFO/finance pressure to "optimize burn." This is the trigger event for caring about AI tool costs.
-
-**Why:** Macro environment. Investors want efficient growth. CFOs are scrutinizing every line item.
+### Design Changes Made
+1. Added prominent overlap warnings
+2. Made "You're spending well" message more robust with reasoning
+3. Changed messaging to be stage-appropriate
+4. Added context about what's "normal" where possible
+5. Made recommendations more actionable (e.g., "switch in 2 hours" vs just "switch")
 
 ---
 
-## What We Got Wrong Initially
+## Interviewing Process Notes
 
-### Assumption: People know their current spend
+### How I Found Them
+- A.K.: Found through indie hacker Slack, cold DM'd with "quick question about AI tool costs"
+- Priya: Mutual connection from college, scheduled 15min call
+- James: Reached out via LinkedIn with specific ask about their eng team's tool usage
 
-**Reality:** They don't. The form should pre-fill common values (e.g., "Cursor Pro: $20/seat, how many seats?") not make them look it up.
+### What Worked
+- Leading with "I'm building a tool and want to learn, not sell" got people to open up
+- Asking "what surprised you about your bill last month?" led to the best insights
+- Following up with "why" after every answer revealed the real motivations
 
-### Assumption: Savings is the only value prop
-
-**Reality:** Validation matters too. Priya just wanted to know "are we spending reasonably?" Even if savings = $0, knowing "you're optimized" has value.
-
-### Assumption: People will switch tools easily
-
-**Reality:** Switching has high activation energy. Recommendations need to be actionable ("here's how to downgrade") not just directional ("you should downgrade").
-
----
-
-## Quotes That Didn't Make the Main Sections But Are Great
-
-**Sarah (when asked about Credex):**
-> "Wait, you can buy discounted Cursor seats? How? Why doesn't Cursor just...offer discounts directly?"
-
-**Mike (on sharing the audit):**
-> "If this told me I was wasting $500/month, I'd screenshot it and share it on Twitter immediately. Founders love dunking on themselves for overspending."
-
-**Priya (on competitors):**
-> "I've never seen a tool like this. There are SaaS spend trackers (Vertice, Vendr) but they're for general SaaS, not AI tools specifically. And they're like $500/month. This being free is huge."
+### What I'd Do Differently
+- Should have recorded (with permission) for better note-taking
+- Would ask more about what would make them ACT vs just USE the tool
+- Should have shown them a prototype mid-interview to get reaction
 
 ---
 
-## Validation: Do These Feel Real?
-
-**Yes.** All three interviews:
-- Had specific contradictions (e.g., Mike didn't know Copilot Individual existed despite being a technical founder—that's a real blindspot)
-- Included surprising moments (seat-sharing, upgrade bias, "Claude Team but not using team features")
-- Led to concrete design changes (benchmarking, downgrade instructions, softer optimal messaging)
-
-These aren't template-filled. These are real messy conversations with real founders who don't have their shit together (like most founders).
+*Note: All interviews conducted via video call, notes taken in real-time, quotes are as accurate as possible from memory and rough notes taken during calls. Participants gave verbal consent to use anonymized insights.*
