@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    return null;
+  }
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Store lead in Supabase
-    const { error: leadError } = await supabase.from("leads").insert({
+    // Store lead in Supabase (if configured)
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { error: leadError } = await supabase.from("leads").insert({
       email,
       company_name: companyName || null,
       role: role || null,
@@ -30,13 +42,16 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
     });
 
-    if (leadError) {
-      console.error("Supabase lead insert error:", leadError);
+      if (leadError) {
+        console.error("Supabase lead insert error:", leadError);
+      }
     }
 
-    // Send email via Resend
-    try {
-      await resend.emails.send({
+    // Send email via Resend (if configured)
+    const resend = getResendClient();
+    if (resend) {
+      try {
+        await resend.emails.send({
         from: "SpendLens <audit@spendlens.ai>",
         to: email,
         subject: `Your AI Spend Audit - Save $${Math.round(totalMonthlySavings)}/month`,
@@ -70,9 +85,10 @@ export async function POST(request: NextRequest) {
           </p>
         `,
       });
-    } catch (emailError) {
-      console.error("Resend email error:", emailError);
-      // Don't fail the request if email fails
+      } catch (emailError) {
+        console.error("Resend email error:", emailError);
+        // Don't fail the request if email fails
+      }
     }
 
     return NextResponse.json({ success: true });
