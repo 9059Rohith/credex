@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save to Supabase (if configured)
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    if (supabaseAdmin) {
       try {
         const { error } = await supabaseAdmin
           .from("leads")

@@ -9,6 +9,10 @@ interface PageProps {
 }
 
 async function getAudit(id: string) {
+  if (!supabase) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("audits")
     .select("*")
