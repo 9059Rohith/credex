@@ -4,6 +4,9 @@ import { runAudit, type AuditInput } from "@/lib/auditEngine";
 import { createClient } from "@supabase/supabase-js";
 import { generateAISummary } from "@/lib/groq";
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 function getSupabaseClient() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return null;
