@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TOOL_PRICING } from "@/lib/pricingData";
+import { runAudit, type AuditInput } from "@/lib/auditEngine";
 
 interface ToolFormData {
   tool: string;
@@ -19,14 +19,14 @@ interface ToolFormData {
 const STORAGE_KEY = "spendlens_form_data";
 
 export default function Home() {
-  const router = useRouter();
   const [teamSize, setTeamSize] = useState(5);
   const [primaryUseCase, setPrimaryUseCase] = useState("coding");
   const [selectedTools, setSelectedTools] = useState<string[]>(["cursor"]);
   const [toolsData, setToolsData] = useState<Record<string, ToolFormData>>({
     cursor: { tool: "cursor", plan: "Pro", seats: 5, monthlySpend: 100 },
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [auditResult, setAuditResult] = useState<any>(null);
+  const [showResults, setShowResults] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -88,33 +88,38 @@ export default function Home() {
     setToolsData({ ...toolsData, [toolKey]: updated });
   };
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      const tools = selectedTools.map((key) => toolsData[key]).filter(Boolean);
-      const response = await fetch("/api/audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tools, teamSize, primaryUseCase }),
-      });
+  const handleSubmit = () => {
+    const tools = selectedTools.map((key) => toolsData[key]).filter(Boolean);
+    const input: AuditInput = { tools, teamSize, primaryUseCase };
+    const result = runAudit(input);
+    setAuditResult(result);
+    setShowResults(true);
+    // Scroll to results
+    setTimeout(() => {
+      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
 
-      if (!response.ok) throw new Error("Audit failed");
-
-      const { slug } = await response.json();
-      router.push(`/audit/${slug}`);
-    } catch (error) {
-      console.error("Error submitting audit:", error);
-      alert("Failed to generate audit. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const resetAudit = () => {
+    setShowResults(false);
+    setAuditResult(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const availableTools = Object.keys(TOOL_PRICING).filter((k) => !selectedTools.includes(k));
 
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500';
+      case 'significant': return 'bg-orange-500';
+      case 'minor': return 'bg-yellow-500';
+      default: return 'bg-green-500';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      <div className="container max-w-4xl mx-auto px-4 py-12">
+      <div className="container max-w-6xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -129,7 +134,7 @@ export default function Home() {
         </div>
 
         {/* Form */}
-        <Card className="border-2 border-primary/20">
+        <Card className="border-2 border-primary/20 mb-8">
           <CardHeader>
             <CardTitle>Your Current AI Tool Stack</CardTitle>
             <CardDescription>
@@ -258,20 +263,162 @@ export default function Home() {
             {/* Submit */}
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || selectedTools.length === 0}
+              disabled={selectedTools.length === 0}
               className="w-full"
               size="lg"
             >
-              {isSubmitting ? "Analyzing..." : "Get My Free Audit →"}
+              Get My Free Audit →
             </Button>
           </CardContent>
         </Card>
 
+        {/* Results Section */}
+        {showResults && auditResult && (
+          <div id="results" className="space-y-6">
+            {/* Hero Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20">
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Savings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-emerald-500">
+                    ${auditResult.totalMonthlySavings.toFixed(0)}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">per month</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Annual Savings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-blue-500">
+                    ${auditResult.totalAnnualSavings.toFixed(0)}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">per year</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Tools Analyzed</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-purple-500">
+                    {auditResult.recommendations.length}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">in your stack</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recommendations */}
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Your Savings Opportunities</h2>
+              {auditResult.recommendations.map((rec: any, idx: number) => (
+                <Card key={idx} className="border-l-4" style={{ borderLeftColor: rec.monthlySavings > 0 ? '#10b981' : '#6b7280' }}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          {TOOL_PRICING[rec.tool]?.name || rec.tool}
+                          <span className={`px-2 py-1 rounded text-xs ${getSeverityColor(rec.severity)}`}>
+                            {rec.severity}
+                          </span>
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          Current: {rec.currentPlan} • ${rec.currentMonthlySpend}/mo
+                        </CardDescription>
+                      </div>
+                      {rec.monthlySavings > 0 && (
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-emerald-500">
+                            -${rec.monthlySavings.toFixed(0)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">per month</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-3">{rec.reason}</p>
+                    {rec.recommendedAction !== 'keep' && (
+                      <div className="bg-secondary p-3 rounded-lg">
+                        <div className="text-sm font-medium mb-1">Recommendation:</div>
+                        <div className="text-sm">
+                          {rec.recommendedAction === 'downgrade' && rec.recommendedPlan && (
+                            <>Downgrade to <strong>{rec.recommendedPlan}</strong></>
+                          )}
+                          {rec.recommendedAction === 'switch' && rec.recommendedTool && (
+                            <>Switch to <strong>{rec.recommendedTool}</strong></>
+                          )}
+                          {rec.recommendedAction === 'eliminate_overlap' && (
+                            <>Consider eliminating tool overlap</>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Summary Card */}
+            {auditResult.totalMonthlySavings > 500 && (
+              <Card className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border-emerald-500/20">
+                <CardHeader>
+                  <CardTitle>🎉 High-Value Opportunity!</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p>
+                    With <strong>${auditResult.totalMonthlySavings.toFixed(0)}/month</strong> in potential savings,
+                    you're an ideal candidate for Credex's discounted AI infrastructure credits.
+                  </p>
+                  <p>
+                    We can help you capture even more savings beyond these recommendations.
+                  </p>
+                  <Button className="w-full md:w-auto" size="lg">
+                    Book a Credex Consultation →
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {auditResult.totalMonthlySavings < 100 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>✅ You're Spending Well!</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Your AI tool stack is already well-optimized. We'll notify you when new optimization
+                    opportunities become available for your configuration.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <Button onClick={resetAudit} variant="outline" size="lg">
+                ← Modify My Stack
+              </Button>
+              <Button variant="outline" size="lg">
+                Share Results
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>No signup required. Results in 30 seconds. Always free.</p>
-          <p className="mt-2">Built by Credex · <a href="https://credex.rocks" className="text-primary hover:underline">credex.rocks</a></p>
-        </div>
+        {!showResults && (
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            <p>No signup required. Results in 30 seconds. Always free.</p>
+            <p className="mt-2">Built by Credex · <a href="https://credex.rocks" className="text-primary hover:underline">credex.rocks</a></p>
+          </div>
+        )}
       </div>
     </div>
   );
