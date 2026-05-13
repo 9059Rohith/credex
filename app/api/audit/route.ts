@@ -4,10 +4,15 @@ import { runAudit, type AuditInput } from "@/lib/auditEngine";
 import { createClient } from "@supabase/supabase-js";
 import { generateAISummary } from "@/lib/groq";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,8 +47,10 @@ export async function POST(request: NextRequest) {
     // Generate unique slug
     const slug = nanoid(10);
 
-    // Save to Supabase
-    const { error } = await supabase.from("audits").insert({
+    // Save to Supabase (if configured)
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { error } = await supabase.from("audits").insert({
       slug,
       tools_json: JSON.stringify(tools),
       results_json: JSON.stringify(auditResult),
@@ -54,9 +61,9 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
     });
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+      }
     }
 
     return NextResponse.json({ slug, audit: auditResult, aiSummary });
